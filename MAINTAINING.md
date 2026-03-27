@@ -123,9 +123,9 @@ cargo run -p xtask -- generate-bindings --check
 
 ## Publishing prebuilts
 
-The repository includes a GitHub workflow that builds prebuilt native archives for the supported targets.
+The repository includes the `Release` GitHub workflow in `.github/workflows/release.yml`, which builds prebuilt native archives for the supported targets.
 
-The prebuilt workflow and `build.rs` assume the GitHub release tag is exactly `v{package.version}`.
+The `Release` workflow and `build.rs` assume the GitHub release tag is exactly `v{package.version}`.
 
 Use `cargo run -p xtask -- release` to:
 
@@ -149,15 +149,14 @@ Each prebuilt archive is published alongside a `.sha256` sidecar and can be used
 
 ## Publishing to crates.io
 
-After pushing `v{package.version}` with `cargo run -p xtask -- release`:
+After pushing `v{package.version}` with `cargo run -p xtask -- release`, the `Release` workflow will automatically publish the crate to crates.io, but only after the prebuilt build matrix and GitHub release job complete successfully.
 
-1. Wait for the prebuilt GitHub workflow for that tag to finish successfully.
-2. Verify that the GitHub release for `v{package.version}` contains the expected archives and `.sha256` sidecars for the supported targets.
-3. From a clean working tree, run:
+The repository must define a `CARGO_REGISTRY_TOKEN` secret containing a crates.io API token with publish permission for this crate.
 
-```bash
-cargo publish --dry-run
-cargo publish
-```
+The automatic flow is:
 
-Publishing after the matching GitHub release exists ensures that the default prebuilt lookup path is already live when crates.io users start building the crate.
+1. Build the prebuilt archives for the supported targets.
+2. Publish the matching GitHub release for `v{package.version}` with those archives and `.sha256` sidecars.
+3. Run `cargo publish` from the tagged commit.
+
+If any earlier job fails, the crates.io publish job does not run.
