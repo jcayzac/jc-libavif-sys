@@ -59,11 +59,18 @@ fn release(repo_root: &Path) -> Result<(), Box<dyn Error>> {
         .current_dir(repo_root)
         .arg("tag")
         .arg(&tag))?;
-    run(Command::new("git")
+    let push_status = Command::new("git")
         .current_dir(repo_root)
         .arg("push")
         .arg("origin")
-        .arg(&tag))?;
+        .arg(&tag)
+        .status()?;
+    if !push_status.success() {
+        return Err(format!(
+            "failed to push {tag} to origin; the local tag was created successfully. Push it manually with: git push origin {tag}"
+        )
+        .into());
+    }
 
     Ok(())
 }

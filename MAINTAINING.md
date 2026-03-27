@@ -44,6 +44,8 @@ Create and push the release tag that matches `Cargo.toml`:
 cargo run -p xtask -- release
 ```
 
+If the `git push` step fails after the tag is created locally, `xtask release` prints the manual retry command to use.
+
 ## Build mode environment variables
 
 The crate build supports these environment variables:
@@ -130,6 +132,7 @@ Use `cargo run -p xtask -- release` to:
 - refuse to run if the working tree is dirty
 - create the `v{package.version}` git tag
 - push that tag to the `origin` remote
+- print a manual `git push origin v{package.version}` retry command if the push fails after local tag creation
 
 Examples:
 

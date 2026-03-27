@@ -16,7 +16,7 @@ By default it tries to fetch a verified prebuilt native archive for the current 
 ## Requirements
 
 - Rust 1.85 or newer
-- for source fallback: `cmake` on `PATH` and a working C/C++ toolchain for the host platform
+- When compiling from source: `cmake` on `PATH` and a working C/C++ toolchain for the host platform
 
 `build.rs` intentionally shells out to `cmake` instead of trying to replicate upstream native build logic in Rust.
 
@@ -38,7 +38,6 @@ The following environment variables control that behavior:
   Require a prebuilt native archive and disable source download and local compilation.
 - `JC_LIBAVIF_SYS_NO_PREBUILT=1`
   Disable prebuilt archives and require the downloaded-source CMake build.
-If Cargo package `repository` metadata is unavailable, the default prebuilt attempt is skipped and the build falls back to source compilation.
 
 Conflict rules:
 
