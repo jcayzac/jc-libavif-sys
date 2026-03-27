@@ -523,8 +523,8 @@ fn build_libaom(source_dir: &Path, build_dir: &Path, cmake: &OsStr) {
         .arg("-DENABLE_TESTS=0")
         .arg("-DENABLE_TOOLS=0");
 
-    if matches!(env::var("CARGO_CFG_TARGET_ARCH").as_deref(), Ok("aarch64")) {
-        configure.arg("-DAOM_TARGET_CPU=arm64");
+    if let Some(cpu) = aom_target_cpu_override() {
+        configure.arg(format!("-DAOM_TARGET_CPU={cpu}"));
     }
 
     run(&mut configure)
@@ -537,6 +537,20 @@ fn build_libaom(source_dir: &Path, build_dir: &Path, cmake: &OsStr) {
         .arg("Release")
         .arg("--parallel"))
     .unwrap_or_else(|error| panic!("failed to build libaom with cmake: {error}"));
+}
+
+fn aom_target_cpu_override() -> Option<&'static str> {
+    let target_arch = env::var("CARGO_CFG_TARGET_ARCH").ok()?;
+
+    if target_arch == "aarch64" {
+        return Some("arm64");
+    }
+
+    if target_arch == "x86_64" && !command_exists("yasm") && !command_exists("nasm") {
+        return Some("generic");
+    }
+
+    None
 }
 
 fn run(command: &mut Command) -> Result<(), String> {

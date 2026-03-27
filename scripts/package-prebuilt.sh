@@ -18,6 +18,7 @@ cargo build --release --target "$target"
 search_roots=()
 if [[ -n "${CARGO_TARGET_DIR:-}" ]]; then
   search_roots+=("${CARGO_TARGET_DIR}/release/build")
+  search_roots+=("${CARGO_TARGET_DIR}/${target}/release/build")
 else
   search_roots+=("target/${target}/release/build")
   search_roots+=("target/release/build")

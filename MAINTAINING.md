@@ -10,6 +10,8 @@
 
 `xtask generate-bindings` also needs `libclang` available to `bindgen`.
 
+On `x86_64` builds, `build.rs` automatically falls back to `-DAOM_TARGET_CPU=generic` when neither `nasm` nor `yasm` is available, so those assemblers are optional rather than required.
+
 ## Common commands
 
 Format the workspace:
