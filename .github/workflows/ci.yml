@@ -8,8 +8,12 @@ on:
     tags:
       - '**'
 
+permissions:
+  contents: read
+
 jobs:
   checks:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     strategy:
       fail-fast: false
       matrix:
@@ -36,6 +40,7 @@ jobs:
         run: cargo test --workspace --all-targets
 
   prebuilt-smoke:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -55,6 +60,7 @@ jobs:
         run: cargo test --workspace --all-targets
 
   bindings:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
