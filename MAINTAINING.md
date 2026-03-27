@@ -38,20 +38,22 @@ Check that committed bindings are current:
 cargo run -p xtask -- generate-bindings --check
 ```
 
+Create and push the release tag that matches `Cargo.toml`:
+
+```bash
+cargo run -p xtask -- release
+```
+
 ## Build mode environment variables
 
 The crate build supports these environment variables:
 
-- `JC_LIBAVIF_SYS_USE_PREBUILT=1`
-  Prefer a prebuilt archive over a local source build. This matches the default build mode.
 - `JC_LIBAVIF_SYS_PREBUILT_ONLY=1`
   Require a prebuilt archive and disable local source builds.
 - `JC_LIBAVIF_SYS_NO_PREBUILT=1`
   Disable prebuilt archives and require a local source build.
 - `JC_LIBAVIF_SYS_PREBUILT_BASE_URL=<url>`
   Base URL to fetch prebuilt archives from.
-- `JC_LIBAVIF_SYS_PREBUILT_TAG=<tag>`
-  Optional release tag used when deriving the default GitHub release URL.
 
 The prebuilt archive naming convention is:
 
@@ -121,12 +123,18 @@ cargo run -p xtask -- generate-bindings --check
 
 The repository includes a GitHub workflow that builds prebuilt native archives for the supported targets.
 
-Any pushed tag triggers the prebuilt workflow and creates a GitHub release for that exact tag, regardless of which branch the tagged commit belongs to.
+The prebuilt workflow and `build.rs` assume the GitHub release tag is exactly `v{package.version}`.
+
+Use `cargo run -p xtask -- release` to:
+
+- refuse to run if the working tree is dirty
+- create the `v{package.version}` git tag
+- push that tag to the `origin` remote
 
 Examples:
 
 - `v1.3.0`
-- `v1.3.1-rc1`
+- `v1.3.0-rc1`
 
 Each archive contains the installed native output layout produced by the crate build:
 

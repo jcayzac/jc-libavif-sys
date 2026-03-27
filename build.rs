@@ -10,11 +10,10 @@ use std::process::{Command, Stdio};
 use tar::Archive;
 
 const ENV_CMAKE: &str = "CMAKE";
-const ENV_USE_PREBUILT: &str = "JC_LIBAVIF_SYS_USE_PREBUILT";
 const ENV_PREBUILT_ONLY: &str = "JC_LIBAVIF_SYS_PREBUILT_ONLY";
 const ENV_NO_PREBUILT: &str = "JC_LIBAVIF_SYS_NO_PREBUILT";
 const ENV_PREBUILT_BASE_URL: &str = "JC_LIBAVIF_SYS_PREBUILT_BASE_URL";
-const ENV_PREBUILT_TAG: &str = "JC_LIBAVIF_SYS_PREBUILT_TAG";
+const ENV_DOCS_RS: &str = "DOCS_RS";
 
 fn main() {
     let manifest_dir =
@@ -25,11 +24,10 @@ fn main() {
     let build_mode = BuildMode::from_env();
 
     emit_rerun_env(ENV_CMAKE);
-    emit_rerun_env(ENV_USE_PREBUILT);
     emit_rerun_env(ENV_PREBUILT_ONLY);
     emit_rerun_env(ENV_NO_PREBUILT);
     emit_rerun_env(ENV_PREBUILT_BASE_URL);
-    emit_rerun_env(ENV_PREBUILT_TAG);
+    emit_rerun_env(ENV_DOCS_RS);
     emit_rerun_rules(&manifest_dir.join("build.rs"));
     emit_rerun_rules(&manifest_dir.join("upstream/versions.toml"));
 
@@ -41,6 +39,10 @@ fn main() {
         "cargo:rustc-env=JC_LIBAVIF_SYS_UPSTREAM_LIBAOM_VERSION={}",
         versions.libaom
     );
+
+    if env_flag(ENV_DOCS_RS) {
+        return;
+    }
 
     let source_dir = out_dir.join("libavif-src");
     let aom_build_dir = source_dir.join("ext/aom/build.libavif");
@@ -406,15 +408,10 @@ fn prebuilt_base_url() -> Result<String, String> {
         ));
     }
 
-    let tag = env::var(ENV_PREBUILT_TAG)
-        .ok()
-        .filter(|value| !value.trim().is_empty())
-        .unwrap_or_else(|| {
-            format!(
-                "v{}",
-                env::var("CARGO_PKG_VERSION").expect("missing CARGO_PKG_VERSION")
-            )
-        });
+    let tag = format!(
+        "v{}",
+        env::var("CARGO_PKG_VERSION").expect("missing CARGO_PKG_VERSION")
+    );
     Ok(format!(
         "{}/releases/download/{}",
         trim_trailing_slashes(&repository),
@@ -650,15 +647,11 @@ enum BuildMode {
 
 impl BuildMode {
     fn from_env() -> Self {
-        let use_prebuilt = env_flag(ENV_USE_PREBUILT);
         let prebuilt_only = env_flag(ENV_PREBUILT_ONLY);
         let no_prebuilt = env_flag(ENV_NO_PREBUILT);
 
         if prebuilt_only && no_prebuilt {
             panic!("{ENV_PREBUILT_ONLY} and {ENV_NO_PREBUILT} cannot both be enabled");
-        }
-        if use_prebuilt && no_prebuilt {
-            panic!("{ENV_USE_PREBUILT} and {ENV_NO_PREBUILT} cannot both be enabled");
         }
 
         if prebuilt_only {

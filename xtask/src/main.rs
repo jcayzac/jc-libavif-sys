@@ -24,6 +24,7 @@ fn real_main() -> Result<(), Box<dyn Error>> {
             let check = matches!(args.next().as_deref(), Some("--check"));
             generate_bindings(&repo_root, check)
         }
+        Some("release") => release(&repo_root),
         Some("upgrade") => {
             let mut requested_libavif = None;
             let mut requested_libaom = None;
@@ -43,9 +44,28 @@ fn real_main() -> Result<(), Box<dyn Error>> {
             upgrade(&repo_root, requested_libavif, requested_libaom)
         }
         _ => Err(
-            "usage:\n  cargo run -p xtask -- generate-bindings [--check]\n  cargo run -p xtask -- upgrade [--libavif <version|latest>] [--libaom <version|latest>]".into(),
+            "usage:\n  cargo run -p xtask -- generate-bindings [--check]\n  cargo run -p xtask -- release\n  cargo run -p xtask -- upgrade [--libavif <version|latest>] [--libaom <version|latest>]".into(),
         ),
     }
+}
+
+fn release(repo_root: &Path) -> Result<(), Box<dyn Error>> {
+    ensure_clean_workdir(repo_root)?;
+
+    let version = read_package_version(&repo_root.join("Cargo.toml"))?;
+    let tag = format!("v{version}");
+
+    run(Command::new("git")
+        .current_dir(repo_root)
+        .arg("tag")
+        .arg(&tag))?;
+    run(Command::new("git")
+        .current_dir(repo_root)
+        .arg("push")
+        .arg("origin")
+        .arg(&tag))?;
+
+    Ok(())
 }
 
 fn upgrade(
@@ -233,6 +253,57 @@ fn write_versions(path: &Path, versions: &Versions) -> Result<(), Box<dyn Error>
             versions.libavif, versions.libaom
         ),
     )?;
+    Ok(())
+}
+
+fn read_package_version(path: &Path) -> Result<String, Box<dyn Error>> {
+    let mut in_package = false;
+
+    for line in fs::read_to_string(path)?.lines() {
+        let line = line.trim();
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+
+        if line.starts_with('[') {
+            in_package = line == "[package]";
+            continue;
+        }
+
+        if !in_package {
+            continue;
+        }
+
+        let Some((key, value)) = line.split_once('=') else {
+            continue;
+        };
+        if key.trim() != "version" {
+            continue;
+        }
+
+        let version = value.trim().trim_matches('"');
+        if version.is_empty() {
+            return Err(format!("package version is empty in {}", path.display()).into());
+        }
+        return Ok(version.to_owned());
+    }
+
+    Err(format!("could not find package.version in {}", path.display()).into())
+}
+
+fn ensure_clean_workdir(repo_root: &Path) -> Result<(), Box<dyn Error>> {
+    let status = command_output(
+        Command::new("git")
+            .current_dir(repo_root)
+            .arg("status")
+            .arg("--short")
+            .arg("--untracked-files=normal"),
+    )?;
+
+    if !status.trim().is_empty() {
+        return Err("refusing to release from a dirty working tree".into());
+    }
+
     Ok(())
 }
 
