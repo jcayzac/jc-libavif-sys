@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - "**"
+    tags:
+      - '**'
+
+jobs:
+  checks:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x86_64
+            runs_on: ubuntu-24.04
+          - name: linux-aarch64
+            runs_on: ubuntu-24.04-arm
+          - name: macos-aarch64
+            runs_on: macos-15
+    runs-on: ${{ matrix.runs_on }}
+    env:
+      JC_LIBAVIF_SYS_NO_PREBUILT: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Rustfmt
+        run: cargo fmt --all --check
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Tests
+        run: cargo test --workspace --all-targets
+
+  prebuilt-smoke:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Package local prebuilt archive
+        shell: bash
+        run: |
+          chmod +x scripts/package-prebuilt.sh
+          ./scripts/package-prebuilt.sh x86_64-unknown-linux-gnu dist
+      - name: Clean workspace
+        run: cargo clean
+      - name: Test prebuilt-only path
+        shell: bash
+        env:
+          JC_LIBAVIF_SYS_PREBUILT_ONLY: "1"
+          JC_LIBAVIF_SYS_PREBUILT_BASE_URL: file://${{ github.workspace }}/dist
+        run: cargo test --workspace --all-targets
+
+  bindings:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install libclang
+        run: sudo apt-get update && sudo apt-get install -y libclang-dev
+      - name: Check committed bindings
+        run: cargo run -p xtask -- generate-bindings --check

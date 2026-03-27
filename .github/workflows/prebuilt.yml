@@ -1,0 +1,64 @@
+name: Prebuilt
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - '**'
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x86_64
+            runs_on: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+          - name: linux-aarch64
+            runs_on: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+          - name: macos-aarch64
+            runs_on: macos-15
+            target: aarch64-apple-darwin
+    runs-on: ${{ matrix.runs_on }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Package prebuilt archive
+        shell: bash
+        env:
+          CARGO_TARGET_DIR: ${{ github.workspace }}/target/${{ matrix.target }}
+        run: |
+          chmod +x scripts/package-prebuilt.sh
+          ./scripts/package-prebuilt.sh "${{ matrix.target }}" dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prebuilt-${{ matrix.target }}
+          path: dist/*
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-24.04
+    needs: build
+    permissions:
+      contents: write
+      attestations: write
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          generate_release_notes: true
+          files: dist/*
+      - uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: dist/*

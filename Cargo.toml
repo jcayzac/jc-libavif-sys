@@ -1,0 +1,25 @@
+[package]
+name = "jc-libavif-sys"
+version = "1.3.0"
+edition = "2024"
+rust-version = "1.85"
+description = "Raw Rust bindings for libavif with prebuilt-first native artifacts and source fallback."
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/jcayzac/jc-libavif-sys"
+links = "avif"
+build = "build.rs"
+keywords = ["avif", "libavif", "ffi", "hdr", "bindings"]
+categories = ["api-bindings", "multimedia::images"]
+
+[features]
+default = []
+
+[build-dependencies]
+flate2 = "1.1"
+sha2 = "0.10"
+tar = "0.4"
+ureq = "2.12"
+
+[workspace]
+members = ["xtask"]
