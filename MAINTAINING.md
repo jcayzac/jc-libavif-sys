@@ -146,3 +146,18 @@ Each archive contains the installed native output layout produced by the crate b
 - `licenses/`
 
 Each prebuilt archive is published alongside a `.sha256` sidecar and can be used by clients through the prebuilt build-mode environment variables above.
+
+## Publishing to crates.io
+
+After pushing `v{package.version}` with `cargo run -p xtask -- release`:
+
+1. Wait for the prebuilt GitHub workflow for that tag to finish successfully.
+2. Verify that the GitHub release for `v{package.version}` contains the expected archives and `.sha256` sidecars for the supported targets.
+3. From a clean working tree, run:
+
+```bash
+cargo publish --dry-run
+cargo publish
+```
+
+Publishing after the matching GitHub release exists ensures that the default prebuilt lookup path is already live when crates.io users start building the crate.
