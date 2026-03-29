@@ -4,6 +4,18 @@
 
 By default it tries to fetch a verified prebuilt native archive for the current target from the GitHub release that matches the crate version. If no matching prebuilt is available, it falls back to downloading the pinned upstream `libavif` and `libaom` source archives and building them with the system `cmake` executable.
 
+## Versioning
+
+The crate version is intended to track the pinned upstream `libavif` version.
+
+Examples:
+
+- `jc-libavif-sys` `1.3.0` targets `libavif` `v1.3.0`
+- `jc-libavif-sys` `1.3.0-rc1` also targets `libavif` `v1.3.0`
+
+The exact pinned native versions used by a given build are also exposed at
+runtime through `UPSTREAM_LIBAVIF_VERSION` and `UPSTREAM_LIBAOM_VERSION`.
+
 ## Features
 
 - Raw Rust bindings for the public `libavif` C API, generated from upstream `avif.h`
